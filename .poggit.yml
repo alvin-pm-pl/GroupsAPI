@@ -5,4 +5,7 @@ branches:
 projects:
   GroupsAPI:
     path: ""
+    libs:
+      - src: poggit/libsynql/libasynql
+        version: 4.0.0^
 ...
