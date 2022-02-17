@@ -27,16 +27,16 @@ Yet another asynchronous permission management plugin for PocketMine-MP.
 
 | Command                                   |Description| Permission                     |
 |-------------------------------------------|---|--------------------------------|
-| /addgroup <player> <group>                |Add a player to a group| groupsapi.command.addgroup     |
-| /removegroup <player> <group>             |Remove a player from a group| groupsapi.command.removegroup  |
-| /checkgroup <player>                      |Check a player's group| groupsapi.command.checkgroup   |
-| /editgroup <group>                        |Edit a group| groupsapi.command.editgroup    |
-| /group <group>                            |Shows group info| groupsapi.command.group        |
+| /addgroup &lt;player&gt; &lt;group&gt;                |Add a player to a group| groupsapi.command.addgroup     |
+| /removegroup &lt;player&gt; &lt;group&gt;             |Remove a player from a group| groupsapi.command.removegroup  |
+| /checkgroup &lt;player&gt;                      |Check a player's group| groupsapi.command.checkgroup   |
+| /editgroup &lt;group&gt;                        |Edit a group| groupsapi.command.editgroup    |
+| /group &lt;group&gt;                            |Shows group info| groupsapi.command.group        |
 | /groups                                   |Shows all groups| groupsapi.command.groups       |
-| /newgroup <group>                         |Create a new group| groupsapi.command.newgroup     |
-| /permissions <index>                      |Check a permission list| groupsapi.command.permissions |
-| /pcheck <player>                          |Check a player's group|groupsapi.command.pcheck|
-| /tempgroup <player> <group> <date format> |Give a temporary group to player|groupsapi.command.tempgroup|
+| /newgroup &lt;group&gt;                         |Create a new group| groupsapi.command.newgroup     |
+| /permissions &lt;index&gt;                      |Check a permission list| groupsapi.command.permissions |
+| /pcheck &lt;player&gt;                          |Check a player's group|groupsapi.command.pcheck|
+| /tempgroup &lt;player&gt; &lt;group&gt; &lt;date format&gt; |Give a temporary group to player|groupsapi.command.tempgroup|
 
 # TODO
 * [ ] Make all processes to UI
