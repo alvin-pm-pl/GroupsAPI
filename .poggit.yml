@@ -6,6 +6,6 @@ projects:
   GroupsAPI:
     path: ""
     libs:
-      - src: poggit/libsynql/libasynql
+      - src: poggit/libasynql/libasynql
         version: 4.0.0^
 ...
