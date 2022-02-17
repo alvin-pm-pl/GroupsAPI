@@ -5,6 +5,8 @@ branches:
 projects:
   GroupsAPI:
     path: ""
+    lint:
+      phpstan: false
     libs:
       - src: poggit/libasynql/libasynql
         version: ^4.0.1
