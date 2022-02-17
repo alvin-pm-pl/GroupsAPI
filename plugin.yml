@@ -1,0 +1,40 @@
+name: GroupsAPI
+author: alvin0319
+main: alvin0319\GroupsAPI\GroupsAPI
+version: 1.0.0
+api: 4.0.0
+
+permissions:
+  groupsapi.command.addgroup:
+    default: op
+    description: Allows player to use addgroup command
+  groupsapi.command.groups:
+    default: op
+    description: Allow player to use groups command
+  groupsapi.command.permissions:
+    default: op
+    description: Allow player to use permissions command
+  groupsapi.command.removegroup:
+    default: op
+    description: Allows player to use removegroup command
+  groupsapi.command.newgroup:
+    default: op
+    description: Allows player to use newgroup command
+  groupsapi.command.deletegroup:
+    default: op
+    description: Allows player to use deletegroup command
+  groupsapi.command.group:
+    default: true
+    description: Allows player to use group command
+  groupsapi.command.checkgroup:
+    default: op
+    description: Allows player to use checkgroup command
+  groupsapi.command.pcheck:
+    default: op
+    description: Allows player to use pcheck command
+  groupsapi.command.tempgroup:
+    default: op
+    description: Allows player to use tempgroup command
+  groupsapi.command.editgroup:
+    default: op
+    description: Allows player to use editgroup command

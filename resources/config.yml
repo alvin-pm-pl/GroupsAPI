@@ -1,0 +1,89 @@
+# GroupsAPI Main configuration file
+# Configurations in this file may not appear automatically upon update, and some settings may crash the server.
+database:
+  # The database type. "sqlite" and "mysql" are supported.
+  type: sqlite
+
+  # Edit these settings only if you choose "sqlite".
+  sqlite:
+    # The file name of the database in the plugin data folder.
+    # You can also put an absolute path here.
+    file: data.sqlite
+  # Edit these settings only if you choose "mysql".
+  mysql:
+    host: 127.0.0.1
+    # Avoid using the "root" user for security reasons.
+    username: root
+    password: ""
+    schema: your_schema
+  # The maximum number of simultaneous SQL queries
+  # Recommended: 1 for sqlite, 2 for MySQL. You may want to further increase this value if your MySQL connection is very slow.
+  worker-limit: 1
+
+remove-op-and-deop:
+  # Whether to remove op and deop command from the PocketMine.
+  # Recommend setting this to true to prevent any unwanted op/deop from being executed.
+  enabled: true
+
+default-groups:
+  # Default groups to be added on database
+  # Formats should be like:
+  # NameOfGroup:
+  #   priority: priority_declared_in_priorities
+  #   permissions:
+  #     - somepermission
+  #     - somepermission2
+  #
+  # If you want to use different priority register priority at priorities
+  Owner:
+    priority: 0
+    permissions:
+      - pocketmine.group.operator
+  Admin:
+    priority: 1
+    permissions:
+      - pocketmine.group.operator
+  Mod:
+    priority: 2
+    permissions:
+      - pocketmine.group.operator
+  YouTuber:
+    priority: 3
+    permissions: []
+  Member:
+    priority: 4
+    permissions: []
+
+priorities:
+  # Default priorities to be used on sort groups
+  # Lower means When sorted, they are sorted in the highest order
+
+  0: Owner
+  1: Admin
+  2: Mod
+  3: YouTuber
+  4: Member
+
+# The default groups that will be added to new players
+# You can add multiple groups
+default-groups-player:
+  - Member
+
+# The chat format that this plugin will use
+# default means the group which doesn't listed on here will use the default format
+chat-format:
+  default: "[{group}] {name} > {message}"
+  Owner: "§c[Owner] §f{name} > {message}"
+  Mod: "§a[Mod] §f{name} > {message}"
+  YouTuber: "§c[YouTuber] §f{name} > {message}"
+
+# NameTag formats that this plugin will use
+# This will set the player's name to the given format
+# Available variables:
+# {name} - The player's name
+# {group} - The player's group
+nametag-format:
+  default: "[{group}] {name}"
+  Owner: "[Owner] {name}"
+  Mod: "[Mod] {name}"
+  YouTuber: "[YouTuber] {name}"
