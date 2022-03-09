@@ -60,7 +60,7 @@ final class GroupManager{
 			try{
 				$this->plugin->getConnector()->executeInsert(SQLQueries::CREATE_GROUP, [
 					"name" => $name,
-					"permissions" => json_encode($permissions, JSON_THROW_ON_ERROR),
+					"permission" => json_encode($permissions, JSON_THROW_ON_ERROR),
 					"priority" => $priority
 				], function(int $insertId, int $affectedRows) use ($name) : void{
 					if($affectedRows > 0){
