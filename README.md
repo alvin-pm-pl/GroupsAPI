@@ -2,18 +2,6 @@
 
 Yet another asynchronous permission management plugin for PocketMine-MP.
 
-# Features that compared to other plugins
-
-|Feature Name|PurePerms|RankSystem|GroupsAPI|Hierarchy|
-|---|---|---|---|---|
-|Multiple Rank/Groups|No|Yes|Yes|No|
-|Asynchronous SQL support|No|Yes|Yes|Yes|
-|Flexible APIs|No|I don't know|Yes|Yes|
-|Easy to use|Yes|Yes|Yes|No|
-|Temporary rank/group|No|Yes|Yes|No|
-|PM4 Suppport|Lack|Yes|Yes|Yes|
-|Priority system like Discord|No|No|Yes|No|
-
 # Features
 
 * Developer-friendly API
