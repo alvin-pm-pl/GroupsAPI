@@ -26,6 +26,11 @@ Yet another asynchronous permission management plugin for PocketMine-MP.
 | /pcheck &lt;player&gt;                          |Check a player's group|groupsapi.command.pcheck|
 | /tempgroup &lt;player&gt; &lt;group&gt; &lt;date format&gt; |Give a temporary group to player|groupsapi.command.tempgroup|
 
+# ScoreHud Integration
+This plugin supports ScoreHud plugin.
+
+You can get player's highest group by adding `{groupsapi.group}` to ScoreHud's scoreboard setting.
+
 # TODO
 * [ ] Make all processes to UI
 * [ ] Add more commands

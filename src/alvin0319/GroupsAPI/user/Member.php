@@ -41,6 +41,7 @@ use alvin0319\GroupsAPI\event\PlayerGroupsUpdatedEvent;
 use alvin0319\GroupsAPI\group\Group;
 use alvin0319\GroupsAPI\group\GroupWrapper;
 use alvin0319\GroupsAPI\GroupsAPI;
+use alvin0319\GroupsAPI\util\ScoreHudUtil;
 use alvin0319\GroupsAPI\util\SQLQueries;
 use DateTime;
 use JsonException;
@@ -223,6 +224,9 @@ final class Member{
 		}catch(JsonException $e){
 		}
 		$this->applyNameTag();
+		if($this->player !== null){
+			ScoreHudUtil::update($this->player, $this);
+		}
 	}
 
 	public function onGroupRemoved(Group $group) : void{

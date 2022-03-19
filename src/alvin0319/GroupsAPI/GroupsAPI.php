@@ -51,6 +51,7 @@ use alvin0319\GroupsAPI\command\TempGroupCommand;
 use alvin0319\GroupsAPI\group\Group;
 use alvin0319\GroupsAPI\group\GroupManager;
 use alvin0319\GroupsAPI\user\MemberManager;
+use alvin0319\GroupsAPI\util\ScoreHudUtil;
 use alvin0319\GroupsAPI\util\SQLQueries;
 use Closure;
 use pocketmine\plugin\PluginBase;
@@ -113,6 +114,8 @@ final class GroupsAPI extends PluginBase{
 		}
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
+
+		ScoreHudUtil::init();
 	}
 
 	private function unregisterCommands() : void{

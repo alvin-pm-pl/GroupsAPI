@@ -4,6 +4,9 @@ main: alvin0319\GroupsAPI\GroupsAPI
 version: 1.0.0
 api: 4.0.0
 
+softdepend:
+  - ScoreHud
+
 permissions:
   groupsapi.command.addgroup:
     default: op
