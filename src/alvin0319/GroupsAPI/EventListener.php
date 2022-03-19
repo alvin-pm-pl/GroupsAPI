@@ -69,7 +69,7 @@ final class EventListener implements Listener{
 		$member->onCompletion(function(Member $member) use ($player) : void{
 //			$player->sendMessage("Your data was successfully loaded.");
 //			$player->sendMessage("Your groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
-			$player->setNameTag(str_replace(["{name}", "{group}"], [$player->getName(), $member->getHighestGroup()->getName()], $this->plugin->getNameTagFormat($member->getHighestGroup())));
+			$member->applyNameTag();
 		}, function() use ($player) : void{
 			// should never fail
 			$player->kick("Failed to load group data");

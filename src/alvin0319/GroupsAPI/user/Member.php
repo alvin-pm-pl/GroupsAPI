@@ -49,6 +49,7 @@ use pocketmine\player\Player;
 use pocketmine\Server;
 use function array_values;
 use function json_encode;
+use function str_replace;
 use function usort;
 
 final class Member{
@@ -221,11 +222,16 @@ final class Member{
 			});
 		}catch(JsonException $e){
 		}
+		$this->applyNameTag();
 	}
 
 	public function onGroupRemoved(Group $group) : void{
 		$this->removeGroup($group);
 		$this->updateGroups();
+	}
+
+	public function applyNameTag() : void{
+		$this->player?->setNameTag(str_replace(["{name}", "{group}"], [$player->getName(), $this->getHighestGroup()->getName()], $this->plugin->getNameTagFormat($this->getHighestGroup())));
 	}
 
 	/**
