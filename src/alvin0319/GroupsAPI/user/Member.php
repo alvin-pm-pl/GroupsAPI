@@ -235,7 +235,7 @@ final class Member{
 	}
 
 	public function applyNameTag() : void{
-		$this->player?->setNameTag(str_replace(["{name}", "{group}"], [$player->getName(), $this->getHighestGroup()->getName()], $this->plugin->getNameTagFormat($this->getHighestGroup())));
+		$this->player?->setNameTag(str_replace(["{name}", "{group}"], [$this->player->getName(), $this->getHighestGroup()->getName()], $this->plugin->getNameTagFormat($this->getHighestGroup())));
 	}
 
 	/**
