@@ -54,9 +54,11 @@ use alvin0319\GroupsAPI\user\MemberManager;
 use alvin0319\GroupsAPI\util\ScoreHudUtil;
 use alvin0319\GroupsAPI\util\SQLQueries;
 use Closure;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\SingletonTrait;
+use pocketmine\utils\Utils;
 use poggit\libasynql\DataConnector;
 use poggit\libasynql\libasynql;
 use function array_keys;
@@ -64,6 +66,8 @@ use function array_search;
 use function count;
 use function json_decode;
 use function json_encode;
+use function str_ends_with;
+use function str_starts_with;
 use function usort;
 
 final class GroupsAPI extends PluginBase{
@@ -79,11 +83,10 @@ final class GroupsAPI extends PluginBase{
 
 	protected MemberManager $memberManager;
 
-	protected int $queryId = 0;
-	/** @var Closure[] */
-	protected array $queries = [];
-
 	protected DataConnector $connector;
+
+	/** @var Closure[] */
+	private array $tagReplacers = [];
 
 	protected function onLoad() : void{
 		self::setInstance($this);
@@ -276,5 +279,21 @@ final class GroupsAPI extends PluginBase{
 			return $a->getPriority() < $b->getPriority() ? -1 : 1;
 		});
 		return (int) array_search($group, $groups, true);
+	}
+
+	/** @return Closure[] */
+	public function getTagReplacers() : array{
+		return $this->tagReplacers;
+	}
+
+	public function addTagReplacer(string $tagName, Closure $replaceCallback) : void{
+		if(!str_starts_with($tagName, "{")){
+			throw new \InvalidArgumentException("Tag name must start with {");
+		}
+		if(!str_ends_with($tagName, "}")){
+			throw new \InvalidArgumentException("Tag name must end with }");
+		}
+		Utils::validateCallableSignature(static function(Player $player, string $tagName) : string{ return ""; }, $replaceCallback);
+		$this->tagReplacers[$tagName] = $replaceCallback;
 	}
 }

@@ -69,6 +69,7 @@ final class EventListener implements Listener{
 		$member->onCompletion(function(Member $member) use ($player) : void{
 //			$player->sendMessage("Your data was successfully loaded.");
 //			$player->sendMessage("Your groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
+			$member->buildFormat();
 			$member->applyNameTag();
 		}, function() use ($player) : void{
 			// should never fail
@@ -105,7 +106,6 @@ final class EventListener implements Listener{
 		if($group === null){
 			return;
 		}
-		$format = $this->plugin->getChatFormat($group->getName());
-		$event->setFormat(str_replace(["{group}", "{name}", "{message}"], [$group->getName(), $player->getName(), $event->getMessage()], $format));
+		$event->setFormat(str_replace("{message}", $event->getMessage(), $member->getChatFormat()));
 	}
 }

@@ -67,6 +67,10 @@ final class Member{
 
 	protected GroupsAPI $plugin;
 
+	private string $nameTagFormat = "";
+
+	private string $chatFormat = "";
+
 	public function __construct(string $name, array $groups){
 		$this->plugin = GroupsAPI::getInstance();
 		$this->name = $name;
@@ -80,6 +84,7 @@ final class Member{
 			}
 		}
 		$this->sortGroup();
+		$this->buildFormat();
 	}
 
 	public function getName() : string{ return $this->name; }
@@ -101,6 +106,14 @@ final class Member{
 
 	public function getPlayer() : ?Player{
 		return $this->player ?? ($this->player = Server::getInstance()->getPlayerExact($this->name));
+	}
+
+	public function getNameTagFormat() : string{
+		return $this->nameTagFormat;
+	}
+
+	public function getChatFormat() : string{
+		return $this->chatFormat;
 	}
 
 	private function sortGroup() : void{
@@ -223,10 +236,27 @@ final class Member{
 			});
 		}catch(JsonException $e){
 		}
+		$this->buildFormat();
 		$this->applyNameTag();
-		if($this->player !== null){
+		if($this->getPlayer() !== null){
 			ScoreHudUtil::update($this->player, $this);
 		}
+	}
+
+	public function buildFormat() : void{
+		if($this->getPlayer() !== null){
+			$chatFormat = str_replace("{name}", $this->player->getName(), $this->plugin->getChatFormat($this->getHighestGroup()?->getName()));
+			$this->chatFormat = $this->processTag($chatFormat);
+			$nameTagFormat = str_replace(["{name}", "{group}"], [$this->player->getName(), $this->getHighestGroup()?->getName()], $this->plugin->getNameTagFormat($this->getHighestGroup()));
+			$this->nameTagFormat = $this->processTag($nameTagFormat);
+		}
+	}
+
+	private function processTag(string $format) : string{
+		foreach($this->plugin->getTagReplacers() as $tagName => $replacer){
+			$format = str_replace($tagName, $replacer($this->player, $tagName), $format);
+		}
+		return str_replace(["{group}", "{name}"], [$this->getHighestGroup()?->getName(), $this->player->getName()], $format);
 	}
 
 	public function onGroupRemoved(Group $group) : void{
