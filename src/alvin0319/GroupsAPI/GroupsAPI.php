@@ -69,7 +69,6 @@ use function json_encode;
 use function str_ends_with;
 use function str_starts_with;
 use function usort;
-use function var_dump;
 
 final class GroupsAPI extends PluginBase{
 	use SingletonTrait;
@@ -169,7 +168,6 @@ final class GroupsAPI extends PluginBase{
 						}
 					});
 				}else{
-					var_dump($rows);
 					$this->groupManager->registerGroup($groupName, $rows[0]["priority"], json_decode($rows[0]["permissions"]));
 				}
 			});
