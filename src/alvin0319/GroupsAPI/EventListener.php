@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace alvin0319\GroupsAPI;
 
 use alvin0319\GroupsAPI\user\Member;
+use alvin0319\GroupsAPI\util\ScoreHudUtil;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerJoinEvent;
@@ -71,6 +72,7 @@ final class EventListener implements Listener{
 //			$player->sendMessage("Your groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
 			$member->buildFormat();
 			$member->applyNameTag();
+			ScoreHudUtil::update($player, $member);
 		}, function() use ($player) : void{
 			// should never fail
 			$player->kick("Failed to load group data");
