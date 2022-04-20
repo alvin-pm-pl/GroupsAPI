@@ -69,6 +69,7 @@ use function json_encode;
 use function str_ends_with;
 use function str_starts_with;
 use function usort;
+use function var_dump;
 
 final class GroupsAPI extends PluginBase{
 	use SingletonTrait;
@@ -161,11 +162,15 @@ final class GroupsAPI extends PluginBase{
 						"name" => $groupName,
 						"permission" => json_encode($groupData["permissions"], JSON_THROW_ON_ERROR),
 						"priority" => (int) $groupData["priority"]
-					], function(int $insertId, int $affectedRows) use ($groupName) : void{
+					], function(int $insertId, int $affectedRows) use ($groupName, $groupData) : void{
 						if($affectedRows > 0){
+							$this->groupManager->registerGroup($groupName, $groupData["priority"], $groupData["permissions"]);
 							$this->getLogger()->debug("Created group $groupName");
 						}
 					});
+				}else{
+					var_dump($rows);
+					$this->groupManager->registerGroup($groupName, $rows[0]["priority"], json_decode($rows[0]["permissions"]));
 				}
 			});
 		}
