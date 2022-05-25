@@ -128,6 +128,8 @@ final class GroupsAPI extends PluginBase{
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 
 		ScoreHudUtil::init();
+
+		$this->connector->waitAll();
 	}
 
 	private function unregisterCommands() : void{
@@ -225,6 +227,7 @@ final class GroupsAPI extends PluginBase{
 	}
 
 	protected function onDisable() : void{
+		$this->connector->waitAll();
 		$this->connector->close();
 	}
 
