@@ -42,13 +42,14 @@ namespace alvin0319\GroupsAPI\command;
 use alvin0319\GroupsAPI\GroupsAPI;
 use alvin0319\GroupsAPI\user\Member;
 use alvin0319\GroupsAPI\util\Util;
+use Generator;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\promise\Promise;
+use SOFe\AwaitGenerator\Await;
 use function count;
 
 final class RemoveGroupCommand extends Command implements PluginOwned{
@@ -74,23 +75,29 @@ final class RemoveGroupCommand extends Command implements PluginOwned{
 			$sender->sendMessage(GroupsAPI::$prefix . "Group {$groupName} not found.");
 			return false;
 		}
-		if($sender instanceof Player){
-			$senderMember = GroupsAPI::getInstance()->getMemberManager()->loadMember($sender->getName());
-			if($senderMember instanceof Promise){
-				$sender->sendMessage(GroupsAPI::$prefix . "An unknown error occurred. try again later.");
+		Await::f2c(function() use ($sender, $name, $group) : Generator{
+			if($sender instanceof Player){
+				/** @var Member|null $senderMember */
+				$senderMember = yield from $this->owningPlugin->getMemberManager()->loadMember($sender->getName());
+				if($senderMember === null){
+					$sender->sendMessage(GroupsAPI::$prefix . "An unknown error occurred. try again later.");
+					return false;
+				}
+				$highestGroup = $senderMember->getHighestGroup();
+				if($highestGroup === null){
+					return false;
+				}
+				if(!Util::canInteractTo($highestGroup, $group)){
+					$sender->sendMessage(GroupsAPI::$prefix . "You can't add this group to other player because you are lower than {$group->getName()}");
+					return false;
+				}
+			}
+			/** @var Member|null $member */
+			$member = yield from $this->owningPlugin->getMemberManager()->loadMember($name);
+			if($member === null){
+				$sender->sendMessage(GroupsAPI::$prefix . "Player {$name} does not found.");
 				return false;
 			}
-			$highestGroup = $senderMember->getHighestGroup();
-			if($highestGroup === null){
-				return false;
-			}
-			if(!Util::canInteractTo($highestGroup, $group)){
-				$sender->sendMessage(GroupsAPI::$prefix . "You can't add this group to other player because you are lower than {$group->getName()}");
-				return false;
-			}
-		}
-		$member = GroupsAPI::getInstance()->getMemberManager()->loadMember($name);
-		if($member instanceof Member){
 			if(count($member->getGroups()) === 1){
 				$sender->sendMessage(GroupsAPI::$prefix . "Member must have at least one group.");
 				return false;
@@ -101,42 +108,7 @@ final class RemoveGroupCommand extends Command implements PluginOwned{
 			}else{
 				$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is not in {$group->getName()} group.");
 			}
-		}elseif($member instanceof Promise){
-			$member->onCompletion(function(Member $member) use ($sender, $group) : void{
-				if($member->hasGroup($group)){
-					if(count($member->getGroups()) === 1){
-						if($sender instanceof Player){
-							if($sender->isOnline()){
-								$sender->sendMessage(GroupsAPI::$prefix . "Member must have at least one group.");
-							}
-						}else{
-							$sender->sendMessage(GroupsAPI::$prefix . "Member must have at least one group.");
-						}
-						return;
-					}
-					$member->removeGroup($group);
-					if($sender instanceof Player){
-						if($sender->isOnline()){
-							$sender->sendMessage(GroupsAPI::$prefix . "Removed {$group->getName()} group from {$member->getName()}.");
-						}
-					}else{
-						$sender->sendMessage(GroupsAPI::$prefix . "Removed {$group->getName()} group from {$member->getName()}");
-					}
-				}else{
-					if($sender instanceof Player){
-						if($sender->isOnline()){
-							$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is not in {$group->getName()} group.");
-						}
-					}else{
-						$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is not in {$group->getName()} group.");
-					}
-				}
-			}, function() use ($sender, $name) : void{
-				$sender->sendMessage(GroupsAPI::$prefix . "Player {$name} is not registered on database.");
-			});
-		}else{
-			$sender->sendMessage(GroupsAPI::$prefix . "Something went wrong");
-		}
+		});
 		return true;
 	}
 }

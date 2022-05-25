@@ -44,6 +44,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
+use SOFe\AwaitGenerator\Await;
 use function array_shift;
 use function count;
 use function trim;
@@ -73,7 +74,7 @@ final class NewGroupCommand extends Command implements PluginOwned{
 			$sender->sendMessage(GroupsAPI::$prefix . "Group {$name} is already exist.");
 			return false;
 		}
-		GroupsAPI::getInstance()->getGroupManager()->registerGroup($name, GroupPriority::PRIORITY_MEMBER, [], true);
+		Await::g2c(GroupsAPI::getInstance()->getGroupManager()->registerGroup($name, GroupPriority::PRIORITY_MEMBER, [], true));
 		$sender->sendMessage(GroupsAPI::$prefix . "Created {$name} group.");
 		$sender->sendMessage(GroupsAPI::$prefix . "Edit group with \"/editgroup {$name}\".");
 		return true;

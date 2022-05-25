@@ -42,6 +42,7 @@ use alvin0319\GroupsAPI\user\Member;
 use alvin0319\GroupsAPI\util\Util;
 use DateTime;
 use Exception;
+use Generator;
 use InvalidArgumentException;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
@@ -49,7 +50,7 @@ use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\promise\Promise;
+use SOFe\AwaitGenerator\Await;
 use Throwable;
 use function count;
 use function date;
@@ -83,60 +84,41 @@ final class TempGroupCommand extends Command implements PluginOwned{
 			$sender->sendMessage(GroupsAPI::$prefix . "Group {$groupName} does not found.");
 			return false;
 		}
-		if($sender instanceof Player){
-			$senderMember = GroupsAPI::getInstance()->getMemberManager()->loadMember($sender->getName());
-			if($senderMember instanceof Promise){
-				$sender->sendMessage(GroupsAPI::$prefix . "An unknown error occurred. try again later.");
-				return false;
+		Await::f2c(function() use ($sender, $name, $group, $date) : Generator{
+			if($sender instanceof Player){
+				/** @var Member|null $senderMember */
+				$senderMember = yield from $this->owningPlugin->getMemberManager()->loadMember($sender->getName());
+				if($senderMember === null){
+					$sender->sendMessage(GroupsAPI::$prefix . "An unknown error occurred. try again later.");
+					return false;
+				}
+				$highestGroup = $senderMember->getHighestGroup();
+				if($highestGroup === null){
+					return false;
+				}
+				if(!Util::canInteractTo($highestGroup, $group)){
+					$sender->sendMessage(GroupsAPI::$prefix . "You can't add this group to other player because you are lower than {$group->getName()}");
+					return false;
+				}
 			}
-			$highestGroup = $senderMember->getHighestGroup();
-			if($highestGroup === null){
-				return false;
-			}
-			if(!Util::canInteractTo($highestGroup, $group)){
-				$sender->sendMessage(GroupsAPI::$prefix . "You can't add this group to other player because you are lower than {$group->getName()}");
-				return false;
-			}
-		}
-		try{
-			$date = $this->parseDate($date);
-			$member = GroupsAPI::getInstance()->getMemberManager()->loadMember($name);
-			if($member instanceof Member){
+			try{
+				$date = $this->parseDate($date);
+				/** @var Member|null $member */
+				$member = yield from $this->owningPlugin->getMemberManager()->loadMember($name);
+				if($member === null){
+					$sender->sendMessage(GroupsAPI::$prefix . "Player {$name} does not found.");
+					return false;
+				}
 				if(!$member->hasGroup($group)){
 					$member->addGroup($group, $date);
 					$sender->sendMessage(GroupsAPI::$prefix . "Added {$group->getName()} group to {$member->getName()}.");
 				}else{
 					$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is already in {$group->getName()} group.");
 				}
-			}elseif($member instanceof Promise){
-				$member->onCompletion(function(Member $member) use ($sender, $group, $date) : void{
-					if(!$member->hasGroup($group)){
-						$member->addGroup($group, $date);
-						if($sender instanceof Player){
-							if($sender->isOnline()){
-								$sender->sendMessage(GroupsAPI::$prefix . "Added {$group->getName()} group to {$member->getName()} until " . date("m-d-Y H:i:s", $date->getTimestamp()) . ".");
-							}
-						}else{
-							$sender->sendMessage(GroupsAPI::$prefix . "Added {$group->getName()} group to {$member->getName()} until " . date("m-d-Y H:i:s", $date->getTimestamp()) . ".");
-						}
-					}else{
-						if($sender instanceof Player){
-							if($sender->isOnline()){
-								$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is already in {$group->getName()} group.");
-							}
-						}else{
-							$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is already in {$group->getName()} group.");
-						}
-					}
-				}, function() use ($sender, $name) : void{
-					$sender->sendMessage(GroupsAPI::$prefix . "Player {$name} is not registered on database.");
-				});
-			}else{
-				$sender->sendMessage(GroupsAPI::$prefix . "Something went wrong");
+			}catch(Throwable $e){
+				$sender->sendMessage(GroupsAPI::$prefix . "Failed to parse date (format be like: 1d1h1m1s)");
 			}
-		}catch(Throwable $e){
-			$sender->sendMessage(GroupsAPI::$prefix . "Failed to parse date (format be like: 1d1h1m1s)");
-		}
+		});
 		return true;
 	}
 

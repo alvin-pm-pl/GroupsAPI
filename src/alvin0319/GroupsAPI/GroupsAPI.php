@@ -52,8 +52,9 @@ use alvin0319\GroupsAPI\group\Group;
 use alvin0319\GroupsAPI\group\GroupManager;
 use alvin0319\GroupsAPI\user\MemberManager;
 use alvin0319\GroupsAPI\util\ScoreHudUtil;
-use alvin0319\GroupsAPI\util\SQLQueries;
 use Closure;
+use Generator;
+use InvalidArgumentException;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
@@ -61,11 +62,11 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use poggit\libasynql\DataConnector;
 use poggit\libasynql\libasynql;
+use SOFe\AwaitGenerator\Await;
 use function array_keys;
 use function array_search;
 use function count;
 use function json_decode;
-use function json_encode;
 use function str_ends_with;
 use function str_starts_with;
 use function usort;
@@ -85,8 +86,14 @@ final class GroupsAPI extends PluginBase{
 
 	protected DataConnector $connector;
 
+	private static Database $database;
+
 	/** @var Closure[] */
 	private array $tagReplacers = [];
+
+	public static function getDatabase() : Database{
+		return self::$database;
+	}
 
 	protected function onLoad() : void{
 		self::setInstance($this);
@@ -106,13 +113,15 @@ final class GroupsAPI extends PluginBase{
 			"sqlite" => "sqlite.sql"
 		]);
 
+		self::$database = new Database($this->connector);
+
 		$this->groupManager = new GroupManager();
 		$this->memberManager = new MemberManager();
 
 		$this->startTasks();
-		$this->doDefaultQueries();
+		Await::g2c($this->doDefaultQueries());
 		$this->registerCommands();
-		if($this->getConfig()->getNested("remove-op-and-deop.enabled", true)){
+		if($this->getConfig()->get("remove-op-and-deop", true)){
 			$this->unregisterCommands();
 		}
 
@@ -148,31 +157,20 @@ final class GroupsAPI extends PluginBase{
 		]);
 	}
 
-	private function doDefaultQueries() : void{
-		$this->connector->executeGeneric(SQLQueries::CREATE_DEFAULT_GROUPS_TABLE);
-		$this->connector->executeGeneric(SQLQueries::CREATE_DEFAULT_USER_TABLE);
+	private function doDefaultQueries() : Generator{
+		yield from self::$database->init();
+		yield from self::$database->createDefaultGroupTable();
 		foreach($this->getConfig()->get("default-groups", []) as $groupName => $groupData){
 			$this->getLogger()->info("Querying default groups {$groupName}");
-			$this->connector->executeSelect(SQLQueries::GET_GROUP, [
-				"name" => $groupName
-			], function(array $rows) use ($groupName, $groupData) : void{
-				if(count($rows) === 0){
-					$this->connector->executeInsert(SQLQueries::CREATE_GROUP, [
-						"name" => $groupName,
-						"permission" => json_encode($groupData["permissions"], JSON_THROW_ON_ERROR),
-						"priority" => (int) $groupData["priority"]
-					], function(int $insertId, int $affectedRows) use ($groupName, $groupData) : void{
-						if($affectedRows > 0){
-							$this->groupManager->registerGroup($groupName, $groupData["priority"], $groupData["permissions"]);
-							$this->getLogger()->debug("Created group $groupName");
-						}
-					});
-				}else{
-					$this->groupManager->registerGroup($groupName, $rows[0]["priority"], json_decode($rows[0]["permissions"]));
-				}
-			});
+			/** @var array $rows */
+			$rows = yield from self::$database->getGroup($groupName);
+			if(count($rows) > 0){
+				yield from $this->groupManager->registerGroup($groupName, $rows[0]["priority"], json_decode($rows[0]["permissions"]));
+			}else{
+				yield from self::$database->createGroup($groupName, $groupData["permissions"], $groupData["priority"]);
+				yield from $this->groupManager->registerGroup($groupName, $groupData["priority"], $groupData["permissions"]);
+			}
 		}
-		$this->connector->waitAll();
 	}
 
 	private function startTasks() : void{
@@ -214,15 +212,15 @@ final class GroupsAPI extends PluginBase{
 		}), 20);
 
 		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask(function() : void{
-			$this->connector->executeSelect(SQLQueries::GET_ALL_GROUPS, [], function(array $row) : void{
-				foreach($row as $key => $value){
+			Await::f2c(function() : Generator{
+				$rows = yield from self::$database->getGroups();
+				foreach($rows as $key => $value){
 					$group = GroupsAPI::getInstance()->getGroupManager()->getGroup($value["name"]);
 					if($group === null){
-						GroupsAPI::getInstance()->getGroupManager()->registerGroup($value["name"], (int) $value["priority"], (array) json_decode($value["permissions"], true, 512, JSON_THROW_ON_ERROR));
+						Await::g2c(GroupsAPI::getInstance()->getGroupManager()->registerGroup($value["name"], (int) $value["priority"], (array) json_decode($value["permissions"], true, 512, JSON_THROW_ON_ERROR)));
 					}
 				}
 			});
-
 		}), 1200);
 	}
 
@@ -291,10 +289,10 @@ final class GroupsAPI extends PluginBase{
 
 	public function addTagReplacer(string $tagName, Closure $replaceCallback) : void{
 		if(!str_starts_with($tagName, "{")){
-			throw new \InvalidArgumentException("Tag name must start with {");
+			throw new InvalidArgumentException("Tag name must start with {");
 		}
 		if(!str_ends_with($tagName, "}")){
-			throw new \InvalidArgumentException("Tag name must end with }");
+			throw new InvalidArgumentException("Tag name must end with }");
 		}
 		Utils::validateCallableSignature(static function(Player $player, string $tagName) : string{ return ""; }, $replaceCallback);
 		$this->tagReplacers[$tagName] = $replaceCallback;

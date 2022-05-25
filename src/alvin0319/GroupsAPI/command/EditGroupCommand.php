@@ -39,14 +39,16 @@ namespace alvin0319\GroupsAPI\command;
 
 use alvin0319\GroupsAPI\form\GroupEditForm;
 use alvin0319\GroupsAPI\GroupsAPI;
+use alvin0319\GroupsAPI\user\Member;
 use alvin0319\GroupsAPI\util\Util;
+use Generator;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\promise\Promise;
+use SOFe\AwaitGenerator\Await;
 use function array_shift;
 use function count;
 
@@ -77,20 +79,20 @@ final class EditGroupCommand extends Command implements PluginOwned{
 			$sender->sendMessage(GroupsAPI::$prefix . "Group not found");
 			return false;
 		}
-		$senderMember = GroupsAPI::getInstance()->getMemberManager()->loadMember($sender->getName());
-		if($senderMember instanceof Promise){
-			$sender->sendMessage(GroupsAPI::$prefix . "An unknown error occurred. try again later.");
-			return false;
-		}
-		$highestGroup = $senderMember->getHighestGroup();
-		if($highestGroup === null){
-			return false;
-		}
-		if(!Util::canInteractTo($highestGroup, $group)){
-			$sender->sendMessage(GroupsAPI::$prefix . "You can't edit this group to other player because you are lower than {$group->getName()}");
-			return false;
-		}
-		$sender->sendForm(new GroupEditForm($group));
+		Await::f2c(function() use ($sender, $group) : Generator{
+			/** @var Member|null $senderMember */
+			$senderMember = yield from $this->owningPlugin->getMemberManager()->loadMember($sender->getName());
+			if($senderMember === null){
+				$sender->sendMessage(GroupsAPI::$prefix . "An unknown error occurred. try again later.");
+				return false;
+			}
+			$highestGroup = $senderMember->getHighestGroup();
+			if(!Util::canInteractTo($highestGroup, $group)){
+				$sender->sendMessage(GroupsAPI::$prefix . "You can't edit this group to other player because you are lower than {$group->getName()}");
+				return false;
+			}
+			$sender->sendForm(new GroupEditForm($group));
+		});
 		return true;
 	}
 }

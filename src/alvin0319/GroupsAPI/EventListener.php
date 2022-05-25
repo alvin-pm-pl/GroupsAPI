@@ -37,13 +37,13 @@ declare(strict_types=1);
 
 namespace alvin0319\GroupsAPI;
 
+use alvin0319\GroupsAPI\event\MemberLoadEvent;
 use alvin0319\GroupsAPI\user\Member;
-use alvin0319\GroupsAPI\util\ScoreHudUtil;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerQuitEvent;
-use pocketmine\promise\Promise;
+use SOFe\AwaitGenerator\Await;
 use function str_replace;
 
 final class EventListener implements Listener{
@@ -60,22 +60,12 @@ final class EventListener implements Listener{
 	public function onPlayerJoin(PlayerJoinEvent $event) : void{
 		$player = $event->getPlayer();
 
-		$member = $this->plugin->getMemberManager()->loadMember($player->getName(), true);
-		if($member instanceof Member){
-			return;
-		}
-		if(!$member instanceof Promise){
-			return;
-		}
-		$member->onCompletion(function(Member $member) use ($player) : void{
-//			$player->sendMessage("Your data was successfully loaded.");
-//			$player->sendMessage("Your groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
-			$member->buildFormat();
-			$member->applyNameTag();
-			ScoreHudUtil::update($player, $member);
-		}, function() use ($player) : void{
-			// should never fail
-			$player->kick("Failed to load group data");
+		Await::g2c($this->plugin->getMemberManager()->loadMember($player->getName(), true), function(?Member $member) use ($player) : void{
+			$member?->buildFormat();
+			$member?->applyNameTag();
+			if($member !== null){
+				(new MemberLoadEvent($member))->call();
+			}
 		});
 	}
 

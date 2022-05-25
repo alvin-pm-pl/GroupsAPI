@@ -42,12 +42,12 @@ use alvin0319\GroupsAPI\group\Group;
 use alvin0319\GroupsAPI\group\GroupWrapper;
 use alvin0319\GroupsAPI\GroupsAPI;
 use alvin0319\GroupsAPI\util\ScoreHudUtil;
-use alvin0319\GroupsAPI\util\SQLQueries;
 use DateTime;
-use JsonException;
+use Generator;
 use pocketmine\permission\PermissionAttachment;
 use pocketmine\player\Player;
 use pocketmine\Server;
+use SOFe\AwaitGenerator\Await;
 use function array_values;
 use function json_encode;
 use function str_replace;
@@ -99,7 +99,7 @@ final class Member{
 	public function getMappedGroups() : array{
 		$res = [];
 		foreach($this->groups as $groupWrapper){
-			$res[$groupWrapper->getGroup()->getName()] = $groupWrapper->getExpireAt() !== null ? $groupWrapper->getExpireAt()->format("m-d-Y H:i:s") : null;
+			$res[$groupWrapper->getGroup()->getName()] = $groupWrapper->getExpireAt()?->format("m-d-Y H:i:s");
 		}
 		return $res;
 	}
@@ -124,11 +124,7 @@ final class Member{
 			return $a->getGroup()->getPriority() < $b->getGroup()->getPriority() ? -1 : 1;
 		});
 		$group = array_values($this->groups)[0] ?? null;
-		if($group !== null){
-			$this->highestGroup = $group->getGroup();
-		}else{
-			$this->highestGroup = null;
-		}
+		$this->highestGroup = $group?->getGroup();
 	}
 
 
@@ -147,7 +143,7 @@ final class Member{
 			$player->recalculatePermissions();
 		}
 
-		$this->updateGroups();
+		Await::g2c($this->updateGroups());
 	}
 
 	/**
@@ -214,7 +210,7 @@ final class Member{
 			}
 			$player->recalculatePermissions();
 		}
-		$this->updateGroups();
+		Await::g2c($this->updateGroups());
 	}
 
 	public function hasGroup(Group $group) : bool{
@@ -226,16 +222,8 @@ final class Member{
 		return false;
 	}
 
-	public function updateGroups() : void{
-		try{
-			$this->plugin->getConnector()->executeChange(SQLQueries::UPDATE_USER, [
-				"name" => $this->name,
-				"group_list" => json_encode($this->getMappedGroups(), JSON_THROW_ON_ERROR)
-			], function(int $affectedRows) : void{
-				$this->plugin->getLogger()->debug("Successfully updated $this->name's groups");
-			});
-		}catch(JsonException $e){
-		}
+	public function updateGroups() : Generator{
+		yield from GroupsAPI::getDatabase()->updateUser($this->name, json_encode($this->getMappedGroups(), JSON_THROW_ON_ERROR));
 		$this->buildFormat();
 		$this->applyNameTag();
 		if($this->getPlayer() !== null){
@@ -259,9 +247,9 @@ final class Member{
 		return str_replace(["{group}", "{name}"], [$this->getHighestGroup()?->getName(), $this->player->getName()], $format);
 	}
 
-	public function onGroupRemoved(Group $group) : void{
+	public function onGroupRemoved(Group $group) : Generator{
 		$this->removeGroup($group);
-		$this->updateGroups();
+		yield from $this->updateGroups();
 	}
 
 	public function applyNameTag() : void{

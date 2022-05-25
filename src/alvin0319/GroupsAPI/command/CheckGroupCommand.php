@@ -39,14 +39,13 @@ namespace alvin0319\GroupsAPI\command;
 
 use alvin0319\GroupsAPI\group\GroupWrapper;
 use alvin0319\GroupsAPI\GroupsAPI;
-use alvin0319\GroupsAPI\user\Member;
+use Generator;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
-use pocketmine\player\Player;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
-use pocketmine\promise\Promise;
+use SOFe\AwaitGenerator\Await;
 use function array_map;
 use function array_shift;
 use function count;
@@ -70,26 +69,15 @@ final class CheckGroupCommand extends Command implements PluginOwned{
 			throw new InvalidCommandSyntaxException();
 		}
 		$player = array_shift($args);
-		$member = GroupsAPI::getInstance()->getMemberManager()->loadMember($player);
-		if($member instanceof Member){
+		Await::f2c(function() use ($sender, $player) : Generator{
+			$member = yield from $this->owningPlugin->getMemberManager()->loadMember($player);
+			if($member === null){
+				$sender->sendMessage(GroupsAPI::$prefix . "Player {$player} does not found.");
+				return false;
+			}
 			$sender->sendMessage(GroupsAPI::$prefix . "Showing " . $member->getName() . "'s group info");
 			$sender->sendMessage(GroupsAPI::$prefix . "Groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
-		}elseif($member instanceof Promise){
-			$member->onCompletion(function(Member $member) use ($sender) : void{
-				if($sender instanceof Player && !$sender->isOnline()){
-					return;
-				}
-				$sender->sendMessage(GroupsAPI::$prefix . "Showing " . $member->getName() . "'s group info");
-				$sender->sendMessage(GroupsAPI::$prefix . "Groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
-			}, function() use ($sender, $player) : void{
-				if($sender instanceof Player && !$sender->isOnline()){
-					return;
-				}
-				$sender->sendMessage(GroupsAPI::$prefix . "Player {$player} does not found.");
-			});
-		}else{
-			$sender->sendMessage(GroupsAPI::$prefix . "Something went wrong.");
-		}
+		});
 		return true;
 	}
 }

@@ -53,7 +53,7 @@ final class PlayerPermissionCommand extends Command implements PluginOwned{
 		parent::__construct("pcheck", "Checks the players' permission.");
 		$this->setUsage("/pcheck <player>");
 		$this->setPermission("groupsapi.command.pcheck");
-		$this->owningPlugin	= GroupsAPI::getInstance();
+		$this->owningPlugin = GroupsAPI::getInstance();
 	}
 
 	public function execute(CommandSender $sender, string $commandLabel, array $args) : bool{

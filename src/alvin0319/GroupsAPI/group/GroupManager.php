@@ -38,8 +38,9 @@ declare(strict_types=1);
 namespace alvin0319\GroupsAPI\group;
 
 use alvin0319\GroupsAPI\GroupsAPI;
-use alvin0319\GroupsAPI\util\SQLQueries;
+use Generator;
 use JsonException;
+use SOFe\AwaitGenerator\Await;
 use function array_values;
 use function json_encode;
 
@@ -53,47 +54,30 @@ final class GroupManager{
 		$this->plugin = GroupsAPI::getInstance();
 	}
 
-	public function registerGroup(string $name, int $priority, array $permissions, bool $sync = false) : void{
+	public function registerGroup(string $name, int $priority, array $permissions, bool $sync = false) : Generator{
 		$group = new Group($name, $permissions, $priority);
 		$this->groups[$group->getName()] = $group;
 		if($sync){
 			try{
-				$this->plugin->getConnector()->executeInsert(SQLQueries::CREATE_GROUP, [
-					"name" => $name,
-					"permission" => json_encode($permissions, JSON_THROW_ON_ERROR),
-					"priority" => $priority
-				], function(int $insertId, int $affectedRows) use ($name) : void{
-					if($affectedRows > 0){
-						$this->plugin->getLogger()->debug("Created group $name");
-					}
-				});
+				yield from GroupsAPI::getDatabase()->createGroup($name, json_encode($permissions, JSON_THROW_ON_ERROR), $priority);
 			}catch(JsonException $e){
 			}
 		}
 	}
 
-	public function unregisterGroup(Group $group, bool $sync = false) : void{
+	public function unregisterGroup(Group $group, bool $sync = false) : Generator{
 		unset($this->groups[$group->getName()]);
 		foreach(GroupsAPI::getInstance()->getMemberManager()->getMembers() as $member){
-			$member->onGroupRemoved($group);
+			yield from $member->onGroupRemoved($group);
 		}
 		if($sync){
-			$this->plugin->getConnector()->executeChange(SQLQueries::DELETE_GROUP, [
-				"name" => $group->getName()
-			], function(int $affectedRows) use ($group) : void{
-				if($affectedRows > 0){
-					$this->plugin->getLogger()->debug("Deleted group {$group->getName()}");
-				}
-			});
+			yield from GroupsAPI::getDatabase()->deleteGroup($group->getName());
 		}
 	}
 
 	public function updateGroup(Group $group) : void{
-		$this->plugin->getConnector()->executeChange(SQLQueries::UPDATE_GROUP, [
-			"name" => $group->getName(),
-			"permission" => json_encode($group->getPermissions(), JSON_THROW_ON_ERROR),
-			"priority" => $group->getPriority()
-		], function(int $affectedRows) use ($group) : void{
+		Await::f2c(function() use ($group) : Generator{
+			$affectedRows = yield from GroupsAPI::getDatabase()->updateGroup($group->getName(), json_encode($group->getPermissions(), JSON_THROW_ON_ERROR), $group->getPriority());
 			if($affectedRows > 0){
 				$this->plugin->getLogger()->debug("Updated group {$group->getName()}");
 			}

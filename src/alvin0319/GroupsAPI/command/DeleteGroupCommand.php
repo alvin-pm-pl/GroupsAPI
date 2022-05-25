@@ -43,6 +43,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
+use SOFe\AwaitGenerator\Await;
 use function array_shift;
 use function count;
 use function trim;
@@ -72,7 +73,7 @@ final class DeleteGroupCommand extends Command implements PluginOwned{
 			$sender->sendMessage(GroupsAPI::$prefix . "Group {$name} does not found.");
 			return false;
 		}
-		GroupsAPI::getInstance()->getGroupManager()->unregisterGroup($group, true);
+		Await::g2c(GroupsAPI::getInstance()->getGroupManager()->unregisterGroup($group, true));
 		$sender->sendMessage(GroupsAPI::$prefix . "Removed {$group->getName()} group successfully.");
 		return true;
 	}

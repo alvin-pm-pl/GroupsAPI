@@ -38,13 +38,11 @@ declare(strict_types=1);
 namespace alvin0319\GroupsAPI\user;
 
 use alvin0319\GroupsAPI\GroupsAPI;
-use alvin0319\GroupsAPI\util\SQLQueries;
-use JsonException;
-use pocketmine\promise\Promise;
-use pocketmine\promise\PromiseResolver;
-use Throwable;
+use Generator;
+use SOFe\AwaitGenerator\Await;
 use function array_values;
 use function count;
+use function json_decode;
 use function json_encode;
 use function strtolower;
 
@@ -63,59 +61,36 @@ final class MemberManager{
 	 * @param string $name
 	 * @param bool   $createOnMissing
 	 *
-	 * @return Member|Promise returns Member if member is loaded from database, returns Promise when it needs to be loaded from database.
+	 * @return Generator<Member|null>
 	 */
-	public function loadMember(string $name, bool $createOnMissing = false) : Promise|Member{
+	public function loadMember(string $name, bool $createOnMissing = false) : Generator{
 		if(isset($this->members[strtolower($name)])){
 			return $this->members[strtolower($name)];
 		}
-		$promise = new PromiseResolver();
-		$this->plugin->getconnector()->executeSelect(SQLQueries::GET_USER, [
-			"name" => strtolower($name)
-		], function(array $rows) use ($name, $promise, $createOnMissing) : void{
-			try{
-				if(count($rows) > 0){
-					$groups = json_decode($rows[0]["groups"], true, 512, JSON_THROW_ON_ERROR);
-					$member = new Member(strtolower($rows[0]["name"]), $groups);
-					$this->plugin->getMemberManager()->registerMember($member);
-					$promise->resolve($member);
-				}elseif($createOnMissing){
-					$groups = GroupsAPI::getInstance()->getDefaultGroups();
-					$defaultGroups = [];
-					foreach($groups as $group){
-						$defaultGroups[$group] = null;
-					}
-					$member = new Member(strtolower($name), $defaultGroups);
-					$this->registerMember($member, true);
-					$promise->resolve($member);
-				}else{
-					$promise->reject();
-				}
-			}catch(Throwable $e){
-				try{
-					$promise->reject();
-				}catch(Throwable $ignore){
-				}
-				$this->plugin->getLogger()->logException($e);
+
+		$rows = yield from GroupsAPI::getDatabase()->getUser($name);
+		if(count($rows) > 0){
+			$groups = json_decode($rows[0]["groups"], true, 512, JSON_THROW_ON_ERROR);
+			$member = new Member(strtolower($rows[0]["name"]), $groups);
+			yield from $this->registerMember($member);
+			return $member;
+		}elseif($createOnMissing){
+			$groups = GroupsAPI::getInstance()->getDefaultGroups();
+			$defaultGroups = [];
+			foreach($groups as $group){
+				$defaultGroups[$group] = null;
 			}
-		});
-		return $promise->getPromise();
+			$member = new Member(strtolower($name), $defaultGroups);
+			yield from $this->registerMember($member);
+			return $member;
+		}
+		return null;
 	}
 
-	public function registerMember(Member $member, bool $sync = false) : void{
+	public function registerMember(Member $member, bool $sync = false) : Generator{
 		$this->members[strtolower($member->getName())] = $member;
 		if($sync){
-			try{
-				$this->plugin->getConnector()->executeInsert(SQLQueries::CREATE_USER, [
-					"name" => $member->getName(),
-					"group_list" => json_encode($member->getMappedGroups(), JSON_THROW_ON_ERROR)
-				], function(int $insertId, int $affectedRows) use ($member) : void{
-					if($affectedRows > 0){
-						$this->plugin->getLogger()->debug("Registered new player {$member->getName()}");
-					}
-				});
-			}catch(JsonException $e){
-			}
+			yield from GroupsAPI::getDatabase()->createUser($member->getName(), json_encode($member->getMappedGroups(), JSON_THROW_ON_ERROR));
 		}
 	}
 
@@ -125,7 +100,7 @@ final class MemberManager{
 	}
 
 	public function unloadMember(Member $member) : void{
-		$member->updateGroups();
+		Await::g2c($member->updateGroups());
 		unset($this->members[strtolower($member->getName())]);
 	}
 
