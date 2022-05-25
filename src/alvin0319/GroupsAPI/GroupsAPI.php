@@ -121,7 +121,7 @@ final class GroupsAPI extends PluginBase{
 		$this->startTasks();
 		Await::g2c($this->doDefaultQueries());
 		$this->registerCommands();
-		if($this->getConfig()->get("remove-op-and-deop", true)){
+		if($this->getConfig()->getNested("remove-op-and-deop.enabled", true)){
 			$this->unregisterCommands();
 		}
 
