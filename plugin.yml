@@ -1,7 +1,7 @@
 name: GroupsAPI
 author: alvin0319
 main: alvin0319\GroupsAPI\GroupsAPI
-version: 1.0.1
+version: 2.0.0
 api: 4.0.0
 
 softdepend:
