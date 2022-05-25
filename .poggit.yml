@@ -11,5 +11,5 @@ projects:
       - src: poggit/libasynql/libasynql
         version: ^4.0.1
       - src: sof3/await-generator/await-generator
-          version: ^3.3.0
+        version: ^3.3.0
 ...
