@@ -67,6 +67,7 @@ use function array_keys;
 use function array_search;
 use function count;
 use function json_decode;
+use function json_encode;
 use function str_ends_with;
 use function str_starts_with;
 use function usort;
@@ -169,7 +170,7 @@ final class GroupsAPI extends PluginBase{
 			if(count($rows) > 0){
 				yield from $this->groupManager->registerGroup($groupName, $rows[0]["priority"], json_decode($rows[0]["permissions"]));
 			}else{
-				yield from self::$database->createGroup($groupName, $groupData["permissions"], $groupData["priority"]);
+				yield from self::$database->createGroup($groupName, json_encode($groupData["permissions"]), $groupData["priority"]);
 				yield from $this->groupManager->registerGroup($groupName, $groupData["priority"], $groupData["permissions"]);
 			}
 		}
