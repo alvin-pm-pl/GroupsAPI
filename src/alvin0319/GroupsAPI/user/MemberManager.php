@@ -64,8 +64,8 @@ final class MemberManager{
 	 * @return Generator<Member|null>
 	 */
 	public function loadMember(string $name, bool $createOnMissing = false) : Generator{
-		if(isset($this->members[strtolower($name)])){
-			return $this->members[strtolower($name)];
+		if(isset($this->members[$name = strtolower($name)])){
+			return $this->members[$name];
 		}
 
 		$rows = yield from GroupsAPI::getDatabase()->getUser($name);
@@ -80,7 +80,7 @@ final class MemberManager{
 			foreach($groups as $group){
 				$defaultGroups[$group] = null;
 			}
-			$member = new Member(strtolower($name), $defaultGroups);
+			$member = new Member($name, $defaultGroups);
 			yield from $this->registerMember($member);
 			return $member;
 		}
@@ -101,7 +101,7 @@ final class MemberManager{
 
 	public function unloadMember(Member $member) : void{
 		Await::g2c($member->updateGroups());
-		unset($this->members[strtolower($member->getName())]);
+		unset($this->members[$member->getName()]);
 	}
 
 	public function getMember(string $name) : ?Member{
