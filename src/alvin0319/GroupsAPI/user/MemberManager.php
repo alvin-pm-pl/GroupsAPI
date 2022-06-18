@@ -42,7 +42,6 @@ use Generator;
 use SOFe\AwaitGenerator\Await;
 use function array_values;
 use function count;
-use function json_decode;
 use function json_encode;
 use function strtolower;
 
@@ -70,8 +69,7 @@ final class MemberManager{
 
 		$rows = yield from GroupsAPI::getDatabase()->getUser($name);
 		if(count($rows) > 0){
-			$groups = json_decode($rows[0]["groups"], true, 512, JSON_THROW_ON_ERROR);
-			$member = new Member(strtolower($rows[0]["name"]), $groups);
+			$member = new Member(strtolower($rows[0]["name"]), []);
 			yield from $this->registerMember($member);
 			return $member;
 		}elseif($createOnMissing){
@@ -81,6 +79,8 @@ final class MemberManager{
 				$defaultGroups[$group] = null;
 			}
 			$member = new Member($name, $defaultGroups);
+			$member->setLoaded(true);
+			$member->onLoad();
 			yield from $this->registerMember($member);
 			return $member;
 		}
@@ -89,6 +89,7 @@ final class MemberManager{
 
 	public function registerMember(Member $member, bool $sync = false) : Generator{
 		$this->members[strtolower($member->getName())] = $member;
+		$this->plugin->getLogger()->debug("Registered member: " . $member->getName());
 		if($sync){
 			yield from GroupsAPI::getDatabase()->createUser($member->getName(), json_encode($member->getMappedGroups(), JSON_THROW_ON_ERROR));
 		}
@@ -101,6 +102,10 @@ final class MemberManager{
 
 	public function unloadMember(Member $member) : void{
 		Await::g2c($member->updateGroups());
+		Await::f2c(function() use ($member) : Generator{
+			yield from GroupsAPI::getDatabase()->updateState($member->getName(), 0);
+			$this->plugin->getLogger()->debug("Updated state of user {$member->getName()} to 0");
+		});
 		unset($this->members[$member->getName()]);
 	}
 
@@ -110,11 +115,19 @@ final class MemberManager{
 
 	public function schedule() : void{
 		foreach($this->members as $name => $member){
-			if($member->getPlayer() === null){
-				$this->unloadMember($member);
-				continue;
+			if($member->isLoaded()){
+				if($member->getPlayer() === null){
+					$this->unloadMember($member);
+					continue;
+				}
 			}
 			$member->tick();
+		}
+	}
+
+	public function close() : void{
+		foreach($this->members as $name => $member){
+			$this->unloadMember($member);
 		}
 	}
 }

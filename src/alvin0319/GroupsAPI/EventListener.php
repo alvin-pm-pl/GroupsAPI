@@ -37,8 +37,6 @@ declare(strict_types=1);
 
 namespace alvin0319\GroupsAPI;
 
-use alvin0319\GroupsAPI\event\MemberLoadEvent;
-use alvin0319\GroupsAPI\user\Member;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerJoinEvent;
@@ -60,13 +58,7 @@ final class EventListener implements Listener{
 	public function onPlayerJoin(PlayerJoinEvent $event) : void{
 		$player = $event->getPlayer();
 
-		Await::g2c($this->plugin->getMemberManager()->loadMember($player->getName(), true), function(?Member $member) use ($player) : void{
-			$member?->buildFormat();
-			$member?->applyNameTag();
-			if($member !== null){
-				(new MemberLoadEvent($member))->call();
-			}
-		});
+		Await::g2c($this->plugin->getMemberManager()->loadMember($player->getName(), true));
 	}
 
 	/**
@@ -91,7 +83,7 @@ final class EventListener implements Listener{
 	public function onPlayerChat(PlayerChatEvent $event) : void{
 		$player = $event->getPlayer();
 		$member = $this->plugin->getMemberManager()->getMember($player->getName());
-		if($member === null){
+		if($member === null || !$member->isLoaded()){
 			return;
 		}
 		$group = $member->getHighestGroup();

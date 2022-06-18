@@ -39,10 +39,12 @@ namespace alvin0319\GroupsAPI\command;
 
 use alvin0319\GroupsAPI\group\GroupWrapper;
 use alvin0319\GroupsAPI\GroupsAPI;
+use alvin0319\GroupsAPI\user\Member;
 use Generator;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
 use SOFe\AwaitGenerator\Await;
@@ -75,8 +77,15 @@ final class CheckGroupCommand extends Command implements PluginOwned{
 				$sender->sendMessage(GroupsAPI::$prefix . "Player {$player} does not found.");
 				return false;
 			}
-			$sender->sendMessage(GroupsAPI::$prefix . "Showing " . $member->getName() . "'s group info");
-			$sender->sendMessage(GroupsAPI::$prefix . "Groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
+			$member->addPendingClosure(function(Member $member) use ($sender) : void{
+				if($sender instanceof Player){
+					if(!$sender->isConnected()){
+						return;
+					}
+				}
+				$sender->sendMessage(GroupsAPI::$prefix . "Showing " . $member->getName() . "'s group info");
+				$sender->sendMessage(GroupsAPI::$prefix . "Groups: " . implode(", ", array_map(fn(GroupWrapper $groupWrapper) => $groupWrapper->getGroup()->getName(), $member->getGroups())));
+			});
 		});
 		return true;
 	}

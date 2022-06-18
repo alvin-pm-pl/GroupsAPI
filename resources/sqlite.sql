@@ -1,7 +1,7 @@
 -- #!sqlite
 -- #{ groupsapi
 -- # { init
-CREATE TABLE IF NOT EXISTS users (name VARCHAR(20) NOT NULL PRIMARY KEY, `groups` TEXT NOT NULL)
+CREATE TABLE IF NOT EXISTS users (name VARCHAR(20) NOT NULL PRIMARY KEY, `groups` TEXT NOT NULL, `loaded` int NOT NULL DEFAULT 0)
 -- # }
 
 -- # { default_group_table
@@ -18,7 +18,7 @@ INSERT INTO `groups` (name, permissions, priority) VALUES (:name, :permission, :
 -- # { create_user
 -- #   :name string
 -- #   :group_list string
-INSERT INTO users (name, `groups`) VALUES (:name, :group_list)
+INSERT INTO users (name, `groups`, `loaded`) VALUES (:name, :group_list, 0)
 -- # }
 
 -- # { get_groups
@@ -51,5 +51,19 @@ DELETE FROM `groups` WHERE name = :name
 -- #   :permission string
 -- #   :priority int
 UPDATE `groups` SET permissions = :permission, priority = :priority WHERE name = :name
+-- # }
+
+-- # { migrate_user_table_add_loaded_column
+ALTER TABLE users ADD COLUMN loaded int NOT NULL DEFAULT 0
+-- # }
+
+-- # { get_users_only_one
+SELECT * FROM users LIMIT 1
+-- # }
+
+-- # { update_state
+-- #   :name string
+-- #   :loaded int
+UPDATE users SET loaded = :loaded WHERE name = :name
 -- # }
 -- #}

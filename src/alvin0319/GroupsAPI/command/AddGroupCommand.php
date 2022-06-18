@@ -96,12 +96,24 @@ final class AddGroupCommand extends Command implements PluginOwned{
 				$sender->sendMessage(GroupsAPI::$prefix . "Player {$name} does not found.");
 				return false;
 			}
-			if(!$member->hasGroup($group)){
-				$member->addGroup($group);
-				$sender->sendMessage(GroupsAPI::$prefix . "Added {$group->getName()} group to {$member->getName()}.");
-			}else{
-				$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is already in {$group->getName()} group.");
-			}
+			$member->addPendingClosure(function(Member $member) use ($group, $sender) : void{
+				if(!$member->hasGroup($group)){
+					$member->addGroup($group);
+					if($sender instanceof Player){
+						if(!$sender->isConnected()){
+							return;
+						}
+					}
+					$sender->sendMessage(GroupsAPI::$prefix . "Added {$group->getName()} group to {$member->getName()}.");
+				}else{
+					if($sender instanceof Player){
+						if(!$sender->isConnected()){
+							return;
+						}
+					}
+					$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is already in {$group->getName()} group.");
+				}
+			});
 		});
 		return true;
 	}

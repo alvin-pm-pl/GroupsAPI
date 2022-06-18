@@ -64,6 +64,7 @@ use poggit\libasynql\DataConnector;
 use poggit\libasynql\libasynql;
 use SOFe\AwaitGenerator\Await;
 use function array_keys;
+use function array_pop;
 use function array_search;
 use function count;
 use function json_decode;
@@ -79,7 +80,7 @@ final class GroupsAPI extends PluginBase{
 		return self::$instance;
 	}
 
-	public static string $prefix = "§b§l[GroupsAPI] §r§7";
+	public static string $prefix = "§l§6NT §f> §r§7";
 
 	protected GroupManager $groupManager;
 
@@ -174,6 +175,14 @@ final class GroupsAPI extends PluginBase{
 				yield from $this->groupManager->registerGroup($groupName, $groupData["priority"], $groupData["permissions"]);
 			}
 		}
+		$result = yield from self::$database->fetchOnlyOneUser();
+		if(count($result) > 0){
+			$result = array_pop($result);
+			if(!isset($result["loaded"])){
+				yield from self::$database->migrate();
+				$this->getLogger()->debug("Migrated database to latest version.");
+			}
+		}
 	}
 
 	private function startTasks() : void{
@@ -228,6 +237,7 @@ final class GroupsAPI extends PluginBase{
 	}
 
 	protected function onDisable() : void{
+		$this->memberManager->close();
 		$this->connector->waitAll();
 		$this->connector->close();
 	}

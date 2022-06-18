@@ -106,6 +106,16 @@ final class Database{
 
 	/**
 	 * <h4>Declared in:</h4>
+	 * - resources/mysql.sql:62
+	 * @return Generator<mixed, 'all'|'once'|'race'|'reject'|'resolve'|array{'resolve'}|Generator<mixed, mixed, mixed, mixed>|null, mixed, list<array<string, mixed>>>
+	 */
+	public function fetchOnlyOneUser() : Generator{
+		$this->conn->executeSelect("groupsapi.get_users_only_one", [], yield Await::RESOLVE, yield Await::REJECT);
+		return yield Await::ONCE;
+	}
+
+	/**
+	 * <h4>Declared in:</h4>
 	 * - resources/mysql.sql:5
 	 * @return Generator<mixed, 'all'|'once'|'race'|'reject'|'resolve'|array{'resolve'}|Generator<mixed, mixed, mixed, mixed>|null, mixed, int>
 	 */
@@ -131,6 +141,20 @@ final class Database{
 
 	/**
 	 * <h4>Declared in:</h4>
+	 * - resources/mysql.sql:68
+	 *
+	 * @param string $name
+	 * @param int    $loaded
+	 *
+	 * @return Generator<mixed, 'all'|'once'|'race'|'reject'|'resolve'|array{'resolve'}|Generator<mixed, mixed, mixed, mixed>|null, mixed, int>
+	 */
+	public function updateState(string $name, int $loaded) : Generator{
+		$this->conn->executeChange("groupsapi.update_state", ["name" => $name, "loaded" => $loaded], yield Await::RESOLVE, yield Await::REJECT);
+		return yield Await::ONCE;
+	}
+
+	/**
+	 * <h4>Declared in:</h4>
 	 * - resources/mysql.sql:42
 	 *
 	 * @param string $name
@@ -140,6 +164,11 @@ final class Database{
 	 */
 	public function updateUser(string $name, string $group_list) : Generator{
 		$this->conn->executeChange("groupsapi.update_user", ["name" => $name, "group_list" => $group_list], yield Await::RESOLVE, yield Await::REJECT);
+		return yield Await::ONCE;
+	}
+
+	public function migrate() : Generator{
+		$this->conn->executeChange("groupsapi.migrate_user_table_add_loaded_column", [], yield Await::RESOLVE, yield Await::REJECT);
 		return yield Await::ONCE;
 	}
 }

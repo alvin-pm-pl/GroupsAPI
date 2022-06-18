@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace alvin0319\GroupsAPI\user;
 
+use alvin0319\GroupsAPI\event\MemberLoadEvent;
 use alvin0319\GroupsAPI\event\PlayerGroupsUpdatedEvent;
 use alvin0319\GroupsAPI\group\Group;
 use alvin0319\GroupsAPI\group\GroupWrapper;
@@ -47,8 +48,10 @@ use Generator;
 use pocketmine\permission\PermissionAttachment;
 use pocketmine\player\Player;
 use pocketmine\Server;
+use pocketmine\utils\Utils;
 use SOFe\AwaitGenerator\Await;
 use function array_values;
+use function count;
 use function json_encode;
 use function str_replace;
 use function usort;
@@ -71,20 +74,19 @@ final class Member{
 
 	private string $chatFormat = "";
 
+	private bool $loaded = false;
+
+	private int $dbRequestTime = 0;
+
+	/** @var \Closure[] */
+	private array $pendingClosures = [];
+
 	public function __construct(string $name, array $groups){
 		$this->plugin = GroupsAPI::getInstance();
 		$this->name = $name;
-		foreach($groups as $groupName => $expireDate){
-			if($expireDate !== null){
-				$expireDate = DateTime::createFromFormat("m-d-Y H:i:s", $expireDate);
-			}
-			$group = GroupsAPI::getInstance()->getGroupManager()->getGroup($groupName);
-			if($group !== null){
-				$this->addGroup($group, $expireDate);
-			}
+		if(count($groups) > 0){
+			$this->buildGroupsFromArray($groups);
 		}
-		$this->sortGroup();
-		$this->buildFormat();
 	}
 
 	public function getName() : string{ return $this->name; }
@@ -128,7 +130,7 @@ final class Member{
 	}
 
 
-	public function addGroup(Group $group, ?DateTime $expireAt = null) : void{
+	public function addGroup(Group $group, ?DateTime $expireAt = null, bool $update = true) : void{
 		$oldGroups = $this->groups;
 		$this->groups[] = new GroupWrapper($group, $expireAt);
 		$this->sortGroup();
@@ -143,7 +145,9 @@ final class Member{
 			$player->recalculatePermissions();
 		}
 
-		Await::g2c($this->updateGroups());
+		if($update){
+			Await::g2c($this->updateGroups());
+		}
 	}
 
 	/**
@@ -223,11 +227,26 @@ final class Member{
 	}
 
 	public function updateGroups() : Generator{
+		if(!$this->loaded){
+			return;
+		}
 		yield from GroupsAPI::getDatabase()->updateUser($this->name, json_encode($this->getMappedGroups(), JSON_THROW_ON_ERROR));
 		$this->buildFormat();
 		$this->applyNameTag();
 		if($this->getPlayer() !== null){
 			ScoreHudUtil::update($this->player, $this);
+		}
+	}
+
+	private function buildGroupsFromArray(array $groups) : void{
+		foreach($groups as $groupName => $expireDate){
+			if($expireDate !== null){
+				$expireDate = DateTime::createFromFormat("m-d-Y H:i:s", $expireDate);
+			}
+			$group = GroupsAPI::getInstance()->getGroupManager()->getGroup($groupName);
+			if($group !== null){
+				$this->addGroup($group, $expireDate);
+			}
 		}
 	}
 
@@ -266,9 +285,83 @@ final class Member{
 	public function getHighestGroup() : ?Group{ return $this->highestGroup; }
 
 	/**
+	 * Returns whether the data has been loaded from database.
+	 * @return bool
+	 */
+	public function isLoaded() : bool{ return $this->loaded; }
+
+	/**
+	 * Mark the data as loaded.
+	 *
+	 * @param bool $loaded
+	 *
+	 * @return void
+	 * @internal do not use this as an API.
+	 */
+	public function setLoaded(bool $loaded) : void{
+		$this->loaded = $loaded;
+	}
+
+	/**
+	 * @return void
+	 * @internal
+	 */
+	public function onLoad() : void{
+		$this->sortGroup();
+		$this->buildFormat();
+		$this->applyNameTag();
+		(new MemberLoadEvent($this))->call();
+		foreach($this->pendingClosures as $closure){
+			$closure($this);
+		}
+	}
+
+	/** @return \Closure[] */
+	public function getPendingClosures() : array{
+		return $this->pendingClosures;
+	}
+
+	public function addPendingClosure(\Closure $closure) : void{
+		Utils::validateCallableSignature(function(Member $member) : void{ }, $closure);
+		if($this->loaded){
+			$closure($this);
+			return;
+		}
+		$this->pendingClosures[] = $closure;
+	}
+
+	/**
 	 * Called every 1 seconds
 	 */
 	public function tick() : void{
+		if(!$this->loaded){
+			Await::f2c(function() : Generator{
+				$result = yield from GroupsAPI::getDatabase()->getUser($this->name);
+				$groups = json_decode($result[0]["groups"], true);
+				if(count($result) > 0){
+					$loaded = (int) $result[0]["loaded"];
+					if($loaded === 0){
+						$this->buildGroupsFromArray($groups);
+						$this->loaded = true;
+						$this->onLoad();
+						$this->plugin->getLogger()->debug("Resolved all data for member " . $this->name);
+						yield from GroupsAPI::getDatabase()->updateState($this->name, 1);
+					}else{
+						++$this->dbRequestTime;
+						if($this->dbRequestTime >= 3){
+							$this->dbRequestTime = 0;
+							$this->loaded = true;
+							$this->buildGroupsFromArray($groups);
+							$this->plugin->getLogger()->debug("Forced to set the state of the member to 1 due to timeout of db request");
+							$this->onLoad();
+						}
+					}
+				}else{
+					$this->loaded = true;
+				}
+			});
+			return;
+		}
 		foreach($this->groups as $key => $groupWrapper){
 			if(($groupWrapper->getExpireAt() !== null) && $groupWrapper->hasExpired()){
 				$this->plugin->getLogger()->debug("Removed {$groupWrapper->getGroup()->getName()} from {$this->player->getName()}");

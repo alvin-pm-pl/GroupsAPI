@@ -98,16 +98,28 @@ final class RemoveGroupCommand extends Command implements PluginOwned{
 				$sender->sendMessage(GroupsAPI::$prefix . "Player {$name} does not found.");
 				return false;
 			}
-			if(count($member->getGroups()) === 1){
-				$sender->sendMessage(GroupsAPI::$prefix . "Member must have at least one group.");
-				return false;
-			}
-			if($member->hasGroup($group)){
-				$member->removeGroup($group);
-				$sender->sendMessage(GroupsAPI::$prefix . "Removed {$group->getName()} group from {$member->getName()}.");
-			}else{
-				$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is not in {$group->getName()} group.");
-			}
+			$member->addPendingClosure(function(Member $member) use ($sender, $group) : void{
+				if(count($member->getGroups()) === 1){
+					$sender->sendMessage(GroupsAPI::$prefix . "Member must have at least one group.");
+					return;
+				}
+				if($member->hasGroup($group)){
+					$member->removeGroup($group);
+					if($sender instanceof Player){
+						if(!$sender->isConnected()){
+							return;
+						}
+					}
+					$sender->sendMessage(GroupsAPI::$prefix . "Removed {$group->getName()} group from {$member->getName()}.");
+				}else{
+					if($sender instanceof Player){
+						if(!$sender->isConnected()){
+							return;
+						}
+					}
+					$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is not in {$group->getName()} group.");
+				}
+			});
 		});
 		return true;
 	}

@@ -109,12 +109,24 @@ final class TempGroupCommand extends Command implements PluginOwned{
 					$sender->sendMessage(GroupsAPI::$prefix . "Player {$name} does not found.");
 					return false;
 				}
-				if(!$member->hasGroup($group)){
-					$member->addGroup($group, $date);
-					$sender->sendMessage(GroupsAPI::$prefix . "Added {$group->getName()} group to {$member->getName()}.");
-				}else{
-					$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is already in {$group->getName()} group.");
-				}
+				$member->addPendingClosure(function(Member $member) use ($sender, $group, $date) : void{
+					if(!$member->hasGroup($group)){
+						$member->addGroup($group, $date);
+						if($sender instanceof Player){
+							if(!$sender->isConnected()){
+								return;
+							}
+						}
+						$sender->sendMessage(GroupsAPI::$prefix . "Added {$group->getName()} group to {$member->getName()}.");
+					}else{
+						if($sender instanceof Player){
+							if(!$sender->isConnected()){
+								return;
+							}
+						}
+						$sender->sendMessage(GroupsAPI::$prefix . "Player {$member->getName()} is already in {$group->getName()} group.");
+					}
+				});
 			}catch(Throwable $e){
 				$sender->sendMessage(GroupsAPI::$prefix . "Failed to parse date (format be like: 1d1h1m1s)");
 			}
