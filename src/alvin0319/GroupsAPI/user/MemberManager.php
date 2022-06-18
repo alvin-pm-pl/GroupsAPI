@@ -81,7 +81,7 @@ final class MemberManager{
 			$member = new Member($name, $defaultGroups);
 			$member->setLoaded(true);
 			$member->onLoad();
-			yield from $this->registerMember($member);
+			yield from $this->registerMember($member, true);
 			return $member;
 		}
 		return null;
