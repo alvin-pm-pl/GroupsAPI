@@ -80,7 +80,7 @@ final class GroupsAPI extends PluginBase{
 		return self::$instance;
 	}
 
-	public static string $prefix = "§l§6NT §f> §r§7";
+	public static string $prefix = "§b§l[GroupsAPI] §r§7";
 
 	protected GroupManager $groupManager;
 
