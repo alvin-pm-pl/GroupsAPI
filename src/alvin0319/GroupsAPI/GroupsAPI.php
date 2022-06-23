@@ -169,7 +169,14 @@ final class GroupsAPI extends PluginBase{
 			/** @var array $rows */
 			$rows = yield from self::$database->getGroup($groupName);
 			if(count($rows) > 0){
-				yield from $this->groupManager->registerGroup($groupName, $rows[0]["priority"], json_decode($rows[0]["permissions"]));
+				$perms = json_decode($rows[0]["permissions"], true);
+				$configPerms = $groupData["permissions"];
+				if($perms !== $configPerms){
+					$this->getLogger()->info("Updating permission of default group {$groupName}");
+					yield from self::$database->updateGroup($groupName, json_encode($configPerms), $rows[0]["priority"]);
+					$perms = $configPerms;
+				}
+				yield from $this->groupManager->registerGroup($groupName, $rows[0]["priority"], $perms);
 			}else{
 				yield from self::$database->createGroup($groupName, json_encode($groupData["permissions"]), $groupData["priority"]);
 				yield from $this->groupManager->registerGroup($groupName, $groupData["priority"], $groupData["permissions"]);
