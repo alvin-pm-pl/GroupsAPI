@@ -81,6 +81,9 @@ final class EventListener implements Listener{
 	 * @priority NORMAL
 	 */
 	public function onPlayerChat(PlayerChatEvent $event) : void{
+		if(!$this->plugin->isChatEnabled()){
+			return;
+		}
 		$player = $event->getPlayer();
 		$member = $this->plugin->getMemberManager()->getMember($player->getName());
 		if($member === null || !$member->isLoaded()){

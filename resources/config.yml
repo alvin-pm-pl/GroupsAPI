@@ -76,6 +76,7 @@ chat-format:
   Owner: "§c[Owner] §f{name} > {message}"
   Mod: "§a[Mod] §f{name} > {message}"
   YouTuber: "§c[YouTuber] §f{name} > {message}"
+  enabled: true
 
 # NameTag formats that this plugin will use
 # This will set the player's name to the given format
@@ -87,3 +88,4 @@ nametag-format:
   Owner: "[Owner] {name}"
   Mod: "[Mod] {name}"
   YouTuber: "[YouTuber] {name}"
+  enabled: true

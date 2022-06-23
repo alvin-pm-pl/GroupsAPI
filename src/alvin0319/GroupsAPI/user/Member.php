@@ -272,6 +272,9 @@ final class Member{
 	}
 
 	public function applyNameTag() : void{
+		if(!$this->plugin->isNameTagEnabled()){
+			return;
+		}
 		$this->player?->setNameTag($this->nameTagFormat);
 	}
 

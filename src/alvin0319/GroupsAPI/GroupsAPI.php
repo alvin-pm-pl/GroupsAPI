@@ -311,4 +311,12 @@ final class GroupsAPI extends PluginBase{
 		Utils::validateCallableSignature(static function(Player $player, string $tagName) : string{ return ""; }, $replaceCallback);
 		$this->tagReplacers[$tagName] = $replaceCallback;
 	}
+
+	public function isChatEnabled() : bool{
+		return $this->getConfig()->getNested("chat-format.enabled", true);
+	}
+
+	public function isNameTagEnabled() : bool{
+		return $this->getConfig()->getNested("nametag-format.enabled", true);
+	}
 }
