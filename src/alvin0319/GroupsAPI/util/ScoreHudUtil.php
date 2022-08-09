@@ -20,7 +20,7 @@ final class ScoreHudUtil{
 
 	public static function update(Player $player, Member $member) : void{
 		if(self::$scoreHudDetected){
-			(new PlayerTagUpdateEvent($player, new ScoreTag("{groupsapi.group}", $member->getHighestGroup()?->getName() ?? "Unknown")))->call();
+			(new PlayerTagUpdateEvent($player, new ScoreTag("groupsapi.group", $member->getHighestGroup()?->getName() ?? "Unknown")))->call();
 		}
 	}
 }
