@@ -2,6 +2,8 @@
 
 Yet another asynchronous permission management plugin for PocketMine-MP.
 
+## Warning: This plugin has discontinued. Use [RankSystem](https://github.com/IvanCraft623/RankSystem) instead.
+
 # Features
 
 * Developer-friendly API
